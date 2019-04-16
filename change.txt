@@ -1,3 +1,4 @@
+# sw3(config-if)# no switchport// На порту коммутатора к роутеру
 sw(config)# ip routing     
 НАСТРОЙКА ИНТЕРФЕЙСа
 	en
