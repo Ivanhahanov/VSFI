@@ -1,0 +1,73 @@
+sw(config)# ip routing     
+НАСТРОЙКА ИНТЕРФЕЙСа
+	en
+		 conf t
+			int fa ???
+					swichport mode access
+					switchport access vlan ???
+					switch(config-if)# switchport port-security maximum 4
+					switchport port-security violation restrict
+					switch(config-if)# switchport port-security 
+
+			
+			int fa ???
+					swichport mode trunk
+					switchport trunk encapsulation dot1q 
+					switchport trunk allowed vlan ???
+					
+MANAGMENT
+		 interface Vlan2
+		sw3(config-if)# ip address 10.0.2.1 255.255.255.0
+		sw3(config-if)# no shutdown
+
+Настройка маршрута по умолчанию:
+	
+	sw3(config) ip route 0.0.0.0 0.0.0.0 192.168.1.1
+
+Включение маршрутизации на коммутаторе:	
+	sw3(config)# ip routing
+
+CАБИНТЕРФЕЙСЫ НА РОУТЕР 	
+	R1(config)# interface fa0/0.99
+	R1(config-subif)# encapsulation dot1q 99 
+	R1(config-subif)# ip address 10.0.99.1 255.255.255.0
+	no shutdown
+	
+DHCP-SERVER
+	Router(config)# service dhcp  
+	Router(config)# ip dhcp pool ????                            
+	Router(config-pool)# network 192.168.20.0 255.255.255.0
+	Router(config-pool)# default-router 192.168.20.1                
+		#Router(config-pool)# domain-name test.kv.ua                    
+		#Router(config-pool)# dns-server 192.168.20.101
+	Router(config)# ip dhcp excluded-address 192.168.20.1
+	Router(config)# ip dhcp excluded-address 192.168.20.101
+	
+?DHCP-SNOOPING
+	sw2(config)# ip dhcp snooping //Включить DHCP snooping
+	sw2(config)# ip dhcp snooping vlan 10 	//Включить DHCP snooping на vlan
+			sw2(config)# interface fa 0/1
+			sw2(config-if)# ip dhcp snooping trust
+	switch(config)# no ip dhcp snooping verify mac-address //Коммутатор проверяет соответствие MAC-адреса в DHCP-запросе MAC-адресу клиента. Если они не соответствуют, то коммутатор отбрасывает пакет
+	sw2(config)#ip dhcp-server 10.84.168.253 //Указать адрес авторизованного DHCP-сервера, доступного через доверенный порт
+	
+	
+USER-NAME
+	enable secret /PASS/
+	username ADMIN privilege 15 secret PASS
+	username USER secret PASS 
+	service password-encryption
+		cisco(config)# line vty 0 4
+		 cisco(config-line)# transport input ssh
+		 cisco(config-line)# logging synchronous
+		 cisco(config-line)# login local
+SSH
+	ip domain-name Mister_X.ru
+	crypto key generate rsa modulus 1024
+	ip ssh version 2
+	router(config)# ip ssh port 2009 rotary 9 //сменить стандартный порт ssh
+		#router(config)# line vty 4
+		#router(config-line)# rotary 9 //группа пользователей ля которых работает новый порт(вроде так)
+		#Router(config)#ip ssh maxstartups 4 // максимальное количество открытых сессий
+		#Router(config)#ip ssh time-out 60 // время автоматического закрытия сессии
+

@@ -1,0 +1,587 @@
+
+en
+#conf t
+(conf)#no ip domain-lookup
+
+(conf)#banner motd "FFFF"
+
+(conf)#enable password cisco
+
+(conf)# hostname R1
+
+(conf)# line con 0
+(conf-line)# logging syn
+(conf-line)# password cisco
+(conf-line)# login
+
+(conf)# line vty 0
+(conf-line)# password cisco
+(conf-line)# login
+
+(conf)# service password-encryption
+
+(conf)# int s0/0/0
+(conf-if)# description "AAAA"
+(conf-if)# ip addr 172.16.12.1 255.255.255.252
+(conf-if)# ipv4 addr 2001:DB8:ACAD:12::1/64 
+(conf-if)# clock rate 128000
+(conf-if)# no shutdown
+
+(conf-if)# do show ip int br
+(conf-if)# do show ipv6 int br
+
+(conf)# ip route 0.0.0.0 0.0.0.0 s0/0/0
+(conf)#  ipv6 route ::/0 s0/0/0
+
+(conf)# do show ip route
+(conf)# do show ipv6 route
+# show ipv6 route
+# show ip route
+
+(conf)# int lo100
+description "AAAA"
+
+
+
+============================
+VLANS
+
+SWITCHES
+
+vlan 31
+name "Uchet"
+
+do show vlan br
+
+int vlan 99
+ip addr 192.168.99.2 255.255.255.0
+
+ip default-gateway 192.168.99.1
+
+int F0/3
+switchport mode trunk
+
+switchport trunk allowed vlan 10,20,30-35
+
+
+int f0/6
+switchport mode access
+switchport access vlan 31
+
+
+
+interface range f0/7-24
+sh
+
+=============================
+R1: Subint
+
+
+int g0/1.31
+encapsulation dot1Q 31
+desc "Accounting VLAN"
+ip addr 192.168.31.2 255.255.255.0
+
+
+int g0/1
+no sh
+
+
+show cpd neighbors
+
+
+
+
+=============================================
+OSPF
+
+router ospf 1
+exit
+
+int s0/0/0
+
+ip ospf 1 area 0
+exit
+
+int g0/1.31
+ip ospf 1 area 0
+...
+
+router ospf 1
+passive-interface default (ALL)
+no passive-interface s0/0/0
+no autosummary
+
+show ip osfp nei
+
+show ip route ospf
+
+==============================================
+DHCP
+
+ip dhcp pool NAME
+network 192.168.31.0 /24
+default-router 192.168.31.2
+domain-name name.com
+dns-server 10.10.10.10
+exit
+
+Reserving addr:
+ip dhcp excluded-address 192.168.31.1 192.168.31.20
+
+
+
+==============================================
+
+NAT 
+
+create account:
+username webuser privilege 15 password cisco12345
+
+
+HTTP server and local database authentication
+
+ip http server
+ip http secure-server
+ip http authentication local
+
+	ACL:
+		ip access-list standard 1
+		permit 192.168.31.0 0.0.0.255
+		permit 192.168.33.0 0.0.0.255
+		permit 192.168.0.0 0.0.7.255
+
+Real NAT setup:
+
+Dynamic NAT:
+ip nat pool INTERNET 1.1.1.1 1.1.1.4 netmask 255.255.255.248
+ip nat inside source list 1 pool INTERNET
+
+SETUP outside int
+int lo100
+ip nat outside
+
+SETUP inside int
+int s0/0/0
+ip nat inside
+
+int s0/0/1
+ip nat inside
+
+int s0/0.<sub>
+ip nat inside
+
+
+
+
+AAA Model
+
+
+Enable:
+aaa new-model
+aaa authentication login default local
+aaa authorization exec default local
+username wsr2018 privilege 15 secret cisco
+enable password wsr
+
+Console auth:
+aaa authorization console
+line con 0
+authorization exec default
+
+
+crypto key generate rsa modulus 1024
+ip ssh version 2
+
+
+
+========================================
+Etherchannel
+
+on SW1:
+
+int range f0/1-3
+channel-group <group_num> mode <mode_active>
+
+on SW2:
+int range f0/1-3
+channel-group <group_num> mode <mode_passive>
+
+show etherch summary
+
+
+========================================
+
+
+int Po2
+switchport mode trunk
+do sh int trunk
+
+disable DTP:
+	switchport noneg
+
+
+
+int Po1
+switchport mode dyn desirable
+
+
+=======================================
+VTP
+
+vtp mode server
+vtp domain <name>
+vtp password VTPPass
+vtp version 3
+
+from enable mode:
+vtp primary
+
+
+on client:
+vtp domain <name>
+vtp password VTPPass
+vtp version 3
+vtp mode client
+
+
+show vtp stat
+show vtp pass
+
+
+
+=======================================
+
+Rapid STP
+
+spaning-tree mode rapid-pvst
+setting root for vlans:
+	spaning-tree vlan 100,200,300 priority 4096
+secondary root:
+	spaning-tree vlan 100,200,300 priority 8192
+
+	on interface:
+	spanning-tree bpduguard enable (for insert new sw)
+	spanning-tree guard root (for root guarding)
+
+	spanning-tree portfast
+
+========================================================
+
+ASA
+hostname FW1
+domain-name wsr2018.ru
+username wsr2018 password cisco privilege 15
+enable password wsr
+password ecryption aes
+
+int vlan 300
+nameif OFFICE
+ip addr 30.30.30.2 255.255.255.0
+no sh
+same-security-traffic permit inter-interface
+same-security-traffic permit intra-interface
+
+Attach phys port to vlan
+int e0/3
+switchport mode access
+switchport access vlan 300
+
+int vlan 400
+
+
+=====================================
+Hardening???
+
+
+BR1
+
+
+create privilege
+
+privilege exec level 5 reload   (for one comnd)
+
+privilege exec all level 5 debug (debug and subcmd)
+
+username user1 privilege 5 secret cisco
+
+
+view!
+
+
+enable view
+
+parser view sh_view
+secret 1235
+
+commands exec include show cdp neighbors (only show cdp neig..)
+commands exec include all show ip (show ip and subcmd)
+
+
+VIEW with interface configuration
+
+commands exec include configure terminal (access to int)
+commands configure include interface (acces to int cmd)
+
+access to int:
+commands configure include interface gigabitethernet0/0
+
+allow some cmd in int:
+commands interface include shutdown
+
+
+SUPERVIEW:
+parser view super superview
+secret wsr
+view sh_view
+view ping_view
+view wan_view
+
+
+
+GAIN VIEW PRIV
+
+username user2 view super secret wsr
+
+
+================================
+create tunnel
+
+int tunnel1
+tunnel mode gre ip
+tunnel source s0/0/1
+tunnel destination 33.33.33.2
+ip addr 5.5.5.1 255.255.255.0
+
+
+===================================
+
+BGP 
+
+router bgp 65000
+address-family ipv4 
+network 5.5.5.0 mask 255.255.255.0
+...
+exit
+
+neighbor 5.5.5.2 remote-as 65001
+
+and at neigbor reversed 
+
+
+
+
+====================================
+
+L2 security 
+port security 
+
+
+int f0/10
+enable: switchport port-security
+
+switchport port-security maximum 2
+switchport port-security mac-address sticky
+switchport port-security violation restrict
+
+
+
+=====================================
+RADIUS
+
+radius server RAD
+address ipv4 172.16.20.2 auth-port 1213 acct-port 123
+key cisco
+
+attach RADIUS to aaa
+aaa authentication login method_man group radius local
+aaa authorization exec method_man group radius local
+
+testing: test aaa group radius server 172.16.20.2 radius cisco legacy
+
+========================================
+
+line vty 0 15
+transport input ssh
+
+
+
+========================================
+ASA aaa-model
+
+aaa authentication enable console LOCAL
+aaa authentication ssh console LOCAL
+ssh key-exchange group dh-group14-sha1
+
+
+
+user 1:
+	+: show ip *
+	-: show ip route, ip version 
+
+user 2:
+	+: show ip, show version, show ip route
+user 3:
+	view:	show_view:	show version, show ip, who
+user 4:
+	view:   ping_view: traceroute, ping
+user5:
+	superview: show_view + ping_view
+
+
+
+
+implicit rule
+acl rule
+
+==============================================
+NTP 
+
+create timezone:
+
+clock timezone EKB 5
+ntp server 192.168.10.21
+
+
+create ntp server:
+ntp master 2
+authen:
+ntp authenticate
+ntp authentication-key 1 md5 cisco
+ntp trusted-key 1
+
+================================================
+SysLOG
+
+logging host 172.16.10.21
+logging trap informational
+
+===============================================
+IPSec
+
+GRE over IPSec
+
+FOR CONNECTION ESTABLISH:
+
+crypto isakmp policy 10 (policy for first phase IKEv1)
+	encryption 3des
+	hash md5
+	authentication pre-share
+
+crypto isakmp key IPSEC address 40.40.60.2 255.255.255.252
+
+FOR IPSEC:
+
+crypto ipsec transform-set IPSEC_TRANS esp-3des esp-md5-hmac
+	mode tunnel
+
+access-list 100 permit gre host 40.40.50.2 host 40.40.60.2
+crypto map C_MAP 10 ipsec-isakmp
+	set peer 40.40.60.2
+	set transform-set IPSEC_TRANS	
+	match address 100
+	
+int s0/0/0
+	crypto map C_MAP
+
+	
+============================================================
+
+IPSec over GRE
+
+crypto isakmp policy 10 (policy for first phase IKEv1)
+	encryption 3des
+	hash md5
+	authentication pre-share
+
+crypto isakmp key IPSEC address 40.40.60.2 255.255.255.252
+crypto ipsec transform-set IPSEC_TRANS esp-3des esp-md5-hmac
+	mode transport
+
+
+crypto ipsec profile IPSEC_PROF
+	set transform-set IPSEC_TRANS
+
+int tun1
+	tunnel mode ipsec ipv4
+	tunnel protection ipsec profile IPSEC_PROF
+
+show status:
+show crypto isakmp sa
+show crypto session
+show crypto ipsec sa
+show crypto map
+
+======================================================
+
+IKEv2
+
+crypto ikev2 proposal K_PROP
+	encryption aes-cbc-256
+	integrity sha256
+	group 14
+
+crypto ikev2 policy K_POL
+	proposal K_PROP
+
+crypto ikev2 profile K_PROF
+	match address local 40.40.50.2
+	math identity remote address 40.40.60.2 255.255.255.0
+	authentication local pre-share key IPSEC
+	authentication remote pre-share key IPSEC_KEK
+
+crypto ipsec transform-set T_SET esp-aes esp-sha256-hmac
+	mode tunnel
+	
+access-list 111 permit gre host 40.40.50.2 host 40.40.60.2
+crypto map K_MAP 10 ipsec-isakmp
+	set peer 40.40.60.2
+	set transform-set T_SET
+	set ikev2-profile K_PROF	
+	match address 111
+	set pfs group14
+int s0/0/0
+	crypto map K_MAP
+
+==============================================
+ASA IPSec 
+
+
+crypto ikev1 policy 10
+	authentication pre-share
+	encryption 3des
+	group 5
+	hash md5
+
+crypto ikev1 enable VLAN_OUT
+
+TUNNEL GROUPS - SETTINGS FOR VPN
+
+tunnel-group 40.40.50.2 type ipsec-l2l (name == ip for site to site vpn)
+tunnel-group 40.40.50.2 ipsec-attributes
+ikev1 pre-shared-key IPSEC
+
+crypto ipsec ikev1 transform-set TR_SET esp-aes esp-sha-hmac
+
+access-list A_L extended permit ip 192.168.1.0 255.255.255.0 192.168.10.0
+
+crypto map CMAP 10 match address A_L
+crypto map CMAP 10 set ikev1 transform-set TR_SET 
+crypto map CMAP 10 set peer 40.40.50.2
+crypto map CMAP interface VLAN_OUT
+
+================================================================
+DynVPN
+
+int tun1
+ip mtu 1400
+ip addr 5.5.5.2 255.255.255.0
+tunnel source s0/0/0
+tunnel mode gre multipoint
+ip nhrp network-id 100
+ip nhrp map multicast dynamic
+
+ip nhrp nhs 5.5.5.1
+ip nhrp map 5.5.5.1 40.40.50.2
+
+
